@@ -61,8 +61,8 @@ WebApplication app = builder.Build();
 
 using (IServiceScope scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
-    var context = services.GetRequiredService<AppDbContext>();
+    IServiceProvider services = scope.ServiceProvider;
+    AppDbContext context = services.GetRequiredService<AppDbContext>();
     try
     {
         Console.WriteLine("--- Database initialization starting ---");
