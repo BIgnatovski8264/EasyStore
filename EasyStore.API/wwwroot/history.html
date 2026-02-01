@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bg">
 <head>
     <meta charset="UTF-8">
@@ -42,10 +42,15 @@
 <body>
 
     <div class="main-container">
+        <div class="mb-3">
+            <a href="index.html" class="btn btn-sm btn-dark">⬅ Обратно към Каса</a>
+            <a href="supply.html" class="btn btn-sm btn-outline-info">🚚 Склад</a>
+        </div>
+
         <div class="report-box">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold m-0">📊 ОБЩ ОТЧЕТ ПРОДАЖБИ</h3>
-                <span id="sync-status" class="badge bg-success">В реално време</span>
+                <span id="sync-status" class="badge bg-success">В реално време (Render)</span>
             </div>
 
             <table class="table table-hover align-middle">
@@ -57,22 +62,26 @@
                     </tr>
                 </thead>
                 <tbody id="summary-rows">
+                    <tr><td colspan="3" class="text-center">Зареждане на данни...</td></tr>
                 </tbody>
             </table>
         </div>
 
         <h4 class="fw-bold mb-3">📜 ИСТОРИЯ НА ВСИЧКИ ПРОДАЖБИ</h4>
         <div id="history-list">
+            <p class="text-center text-muted">Зареждане на архив...</p>
         </div>
     </div>
 
     <script>
+        const API_URL = "https://easystore-api-irzm.onrender.com/api/Sales";
+
         async function loadReport() {
             const summaryRows = document.getElementById('summary-rows');
             const historyList = document.getElementById('history-list');
 
             try {
-                const response = await fetch('/api/Sales');
+                const response = await fetch(API_URL);
                 const data = await response.json();
 
                 if (!data || data.length === 0) {
@@ -86,18 +95,21 @@
 
                 data.forEach(sale => {
                     const guid = sale.groupGuid || sale.GroupGuid;
+                    
                     if (guid && guid.startsWith("IN-")) return;
 
-                    const pName = sale.productName || sale.ProductName;
-                    const pQty = sale.quantity || 0;
+                    const pName = sale.productName || sale.ProductName || "Неизвестен продукт";
+                    const pQty = sale.quantity || sale.Quantity || 0;
                     const pSum = sale.totalPrice || sale.TotalPrice || 0;
 
                     if (!productStats[pName]) productStats[pName] = { qty: 0, sum: 0 };
                     productStats[pName].qty += pQty;
                     productStats[pName].sum += pSum;
 
-                    if (!groupedSales[guid]) groupedSales[guid] = [];
-                    groupedSales[guid].push(sale);
+                    if (guid) {
+                        if (!groupedSales[guid]) groupedSales[guid] = [];
+                        groupedSales[guid].push(sale);
+                    }
                 });
 
                 summaryRows.innerHTML = Object.keys(productStats).map(name => `
@@ -108,39 +120,48 @@
                     </tr>
                 `).join('');
 
-                const sortedGuids = Object.keys(groupedSales).reverse();
-                historyList.innerHTML = sortedGuids.map(guid => {
-                    const items = groupedSales[guid];
-                    const date = new Date(items[0].saleDate || items[0].SaleDate).toLocaleString('bg-BG');
-                    let totalBill = 0;
+                const sortedGuids = Object.keys(groupedSales).sort().reverse();
+                
+                if (sortedGuids.length === 0) {
+                    historyList.innerHTML = '<p class="text-center text-muted">Няма продажби за показване.</p>';
+                } else {
+                    historyList.innerHTML = sortedGuids.map(guid => {
+                        const items = groupedSales[guid];
+                        const dateRaw = items[0].saleDate || items[0].SaleDate;
+                        const date = new Date(dateRaw).toLocaleString('bg-BG');
+                        let totalBill = 0;
 
-                    const billItems = items.map(it => {
-                        const price = it.totalPrice || it.TotalPrice || 0;
-                        totalBill += price;
-                        return `<div class="d-flex justify-content-between small">
-                                    <span>${it.productName} (x${it.quantity})</span>
-                                    <span>${price.toFixed(2)} лв.</span>
-                                </div>`;
+                        const billItems = items.map(it => {
+                            const qty = it.quantity || it.Quantity || 0;
+                            const price = it.totalPrice || it.TotalPrice || 0;
+                            totalBill += price;
+                            return `<div class="d-flex justify-content-between small">
+                                        <span>${it.productName || it.ProductName} (x${qty.toFixed(2)})</span>
+                                        <span>${price.toFixed(2)} лв.</span>
+                                    </div>`;
+                        }).join('');
+
+                        return `
+                            <div class="receipt-item shadow-sm">
+                                <div class="d-flex justify-content-between fw-bold mb-2 border-bottom pb-1" style="font-size: 0.85rem;">
+                                    <span>📅 ${date}</span>
+                                    <span class="text-primary">ОБЩО: ${totalBill.toFixed(2)} лв.</span>
+                                </div>
+                                ${billItems}
+                                <div class="text-muted mt-1" style="font-size: 0.65rem;">ID: ${guid}</div>
+                            </div>`;
                     }).join('');
-
-                    return `
-                        <div class="receipt-item shadow-sm">
-                            <div class="d-flex justify-content-between fw-bold mb-2 border-bottom pb-1" style="font-size: 0.85rem;">
-                                <span>${date}</span>
-                                <span class="text-primary">ОБЩО: ${totalBill.toFixed(2)} лв.</span>
-                            </div>
-                            ${billItems}
-                        </div>`;
-                }).join('');
+                }
 
             } catch (error) {
-                summaryRows.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Грешка при връзка със сървъра!</td></tr>';
+                console.error("Грешка при отчета:", error);
+                summaryRows.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Грешка при връзка със сървъра в Render!</td></tr>';
+                historyList.innerHTML = '<p class="text-center text-danger">Неуспешно зареждане на данните.</p>';
             }
         }
 
         loadReport();
-        setInterval(loadReport, 20000);
-    </script>
+        setInterval(loadReport, 30000); 
 
 </body>
 </html>
