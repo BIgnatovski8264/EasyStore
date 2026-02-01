@@ -8,5 +8,5 @@ services:
 
 databases:
   - name: EasyStore-db
-    databaseName: EasyStoredb
+    databaseName: easystoredb
     plan: free
