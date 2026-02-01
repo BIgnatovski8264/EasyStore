@@ -20,24 +20,30 @@ builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 
+string dbConn = Environment.GetEnvironmentVariable("DB_CONNECTION") 
+                ?? builder.Configuration.GetConnectionString("DefaultConnection") 
+                ?? "";
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseNpgsql(Environment.GetEnvironmentVariable("DB_CONNECTION")!);
+    options.UseNpgsql(dbConn);
     options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 });
+
+string jwtSecret = Environment.GetEnvironmentVariable("JWT_TOKEN_SECRET") ?? "fallback_secret_key_32_chars_long!!";
+string jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "EasyStore";
+string jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "EasyStore";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options => {
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER"),
+            ValidIssuer = jwtIssuer,
             ValidateAudience = true,
-            ValidAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
+            ValidAudience = jwtAudience,
             ValidateLifetime = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWT_TOKEN_SECRET")!)
-            ),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
             ValidateIssuerSigningKey = true
         };
     });
@@ -55,56 +61,32 @@ WebApplication app = builder.Build();
 
 using (IServiceScope scope = app.Services.CreateScope())
 {
-    IServiceProvider services = scope.ServiceProvider;
-    AppDbContext context = services.GetRequiredService<AppDbContext>();
-
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<AppDbContext>();
     try
     {
-        Console.WriteLine("--- ПОДГОТОВКА НА БАЗАТА ---");
-
-        if (Environment.GetEnvironmentVariable("DROP_DB_ON_RUN") == "1")
-        {
-            Console.WriteLine("--- ТРИЕНЕ И ПРЕЗАРЕЖДАНЕ НА ТАБЛИЦИ ---");
-            await DatabaseHelper.TruncateAllTablesSafeAsync(context);
-            await context.Database.MigrateAsync();
-        }
-        else
-        {
-            await context.Database.EnsureCreatedAsync();
-            await context.Database.MigrateAsync();
-        }
-
-        Console.WriteLine("--- СТАРТИРАНЕ НА SEED НА ДАННИ ---");
+        Console.WriteLine("--- Database initialization starting ---");
+        await context.Database.MigrateAsync();
         await DbInitializer.SeedAsync(services);
-        Console.WriteLine("--- ВСИЧКО Е ЗАРЕДЕНО УСПЕШНО ---");
+        Console.WriteLine("--- Database is ready ---");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"КРИТИЧНА ГРЕШКА ПРИ СТАРТ: {ex.Message}");
+        Console.WriteLine($"Critical error during DB init: {ex.Message}");
     }
 }
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseMiddleware<ExceptionHandlerMiddleware>();
-
 app.UseCors("AllowAll");
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
-}
-else 
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
-}
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
