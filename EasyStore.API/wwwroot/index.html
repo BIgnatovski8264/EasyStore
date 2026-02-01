@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bg">
 <head>
     <meta charset="UTF-8">
@@ -130,7 +130,7 @@
                 <a class="nav-link active" href="index.html">📦 Каса</a>
                 <a class="nav-link text-warning fw-bold" href="supply.html">🚚 Доставки</a>
                 <a class="nav-link" href="history.html">📜 История</a>
-                <a class="nav-link text-info" href="/scalar/v1" target="_blank">🛠 API</a>
+                <a class="nav-link text-info" href="https://easystore-api-irzm.onrender.com/scalar/v1" target="_blank">🛠 API</a>
                 <a class="nav-link text-danger fw-bold" id="admin-link" href="#" style="display:none;" data-bs-toggle="modal" data-bs-target="#adminModal">👥 ПЕРСОНАЛ</a>
             </div>
             <div class="navbar-nav ms-auto align-items-center">
@@ -205,9 +205,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // ДЕФИНИРАМЕ БАЗОВИЯ URL ЗА ДА НЕ ГО ПИШЕМ НАВСЯКЪДЕ
+        const API_URL = "https://easystore-api-irzm.onrender.com/api";
         const EUR_RATE = 1.95583;
 
-        // Начални данни + Зареждане от паметта на браузъра
         let cashiers = JSON.parse(localStorage.getItem('pos_users')) || [
             { id: "1", pass: "1111", name: "Касиер 1", role: "user" },
             { id: "2", pass: "2222", name: "Касиер 2", role: "user" },
@@ -229,7 +230,8 @@
         }
 
         function updateTime() {
-            document.getElementById('receipt-date').innerText = new Date().toLocaleString('bg-BG');
+            const dateEl = document.getElementById('receipt-date');
+            if(dateEl) dateEl.innerText = new Date().toLocaleString('bg-BG');
         }
 
         function checkAuth() {
@@ -265,7 +267,6 @@
             }
         }
 
-        // --- НОВИ ФУНКЦИИ ЗА ПЕРСОНАЛ ---
         function addNewCashier() {
             const id = document.getElementById('new-id').value.trim();
             const pass = document.getElementById('new-pass').value.trim();
@@ -297,13 +298,12 @@
             localStorage.setItem('pos_users', JSON.stringify(cashiers));
             renderStaffList();
         }
-        // ------------------------------
 
         function logout() { sessionStorage.clear(); location.reload(); }
 
         async function loadCategories() {
             try {
-                const res = await fetch('/api/Categories');
+                const res = await fetch(`${API_URL}/Categories`);
                 const categories = await res.json();
                 const container = document.getElementById('category-filters');
                 categories.forEach(cat => {
@@ -318,9 +318,9 @@
 
         async function loadProducts() {
             try {
-                const res = await fetch('/api/Products');
+                const res = await fetch(`${API_URL}/Products`);
                 const data = await res.json();
-                allProducts = data.sort((a, b) => a.name.localeCompare(b.name));
+                allProducts = Array.isArray(data) ? data.sort((a, b) => a.name.localeCompare(b.name)) : [];
                 renderProductsGrid();
             } catch (err) { console.error(err); }
         }
@@ -428,7 +428,7 @@
             const transactionGuid = "SALE-" + Date.now();
 
             try {
-                const res = await fetch('/api/Sales/sell-multiple', {
+                const res = await fetch(`${API_URL}/Sales/sell-multiple`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(receipt.map(r => ({
