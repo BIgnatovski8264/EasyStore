@@ -23,10 +23,10 @@
             border-left: 5px solid #0dcaf0;
         }
 
-            .product-card:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            }
+        .product-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
 
         .supply-container {
             background: #fff;
@@ -135,13 +135,15 @@
                 const res = await fetch(`${API_URL}/Categories`);
                 const categories = await res.json();
                 const container = document.getElementById('category-filters');
-                categories.forEach(cat => {
-                    const btn = document.createElement('button');
-                    btn.className = `btn btn-outline-secondary cat-btn`;
-                    btn.innerText = cat.name;
-                    btn.onclick = (e) => filterByCategory(cat.id, e.target);
-                    container.appendChild(btn);
-                });
+                if (Array.isArray(categories)) {
+                    categories.forEach(cat => {
+                        const btn = document.createElement('button');
+                        btn.className = `btn btn-outline-secondary cat-btn`;
+                        btn.innerText = cat.name;
+                        btn.onclick = (e) => filterByCategory(cat.id, e.target);
+                        container.appendChild(btn);
+                    });
+                }
             } catch (err) { console.error("Грешка категории:", err); }
         }
 
@@ -149,15 +151,20 @@
             try {
                 const res = await fetch(`${API_URL}/Products`);
                 const data = await res.json();
-                // Добавена проверка за масив, за да не гърми кода при празна база
-                allProducts = Array.isArray(data) ? data : [];
+                allProducts = Array.isArray(data) ? data.sort((a, b) => a.name.localeCompare(b.name)) : [];
                 renderGrid();
-            } catch (err) { console.error("Грешка продукти:", err); }
+            } catch (err) { 
+                console.error("Грешка продукти:", err);
+                document.getElementById('products-grid').innerHTML = '<div class="alert alert-danger w-100">Грешка при връзка със сървъра.</div>';
+            }
         }
 
         function filterByCategory(catId, btn) {
             currentCategoryId = catId;
-            document.querySelectorAll('.cat-btn').forEach(b => b.className = 'btn btn-outline-secondary cat-btn');
+            document.querySelectorAll('.cat-btn').forEach(b => {
+                b.classList.remove('btn-info', 'text-white');
+                b.classList.add('btn-outline-secondary');
+            });
             if (catId === 'all') document.getElementById('btn-all').className = 'btn btn-info text-white cat-btn';
             else btn.className = 'btn btn-info text-white cat-btn';
             renderGrid();
@@ -177,32 +184,34 @@
             }
 
             grid.innerHTML = filtered.map(p => `
-                    <div class="col">
-                        <div class="card h-100 product-card shadow-sm">
-                            <div class="card-body p-3">
-                                <h6 class="fw-bold mb-1">${p.name}</h6>
-                                <div class="small text-muted mb-2">Наличност: <b class="text-dark">${p.stockQuantity}</b></div>
-                                <div class="mb-2 d-flex gap-1">
-                                    <button class="btn btn-xs btn-outline-info" onclick="document.getElementById('qty-${p.id}').value = 10">+10</button>
-                                    <button class="btn btn-xs btn-outline-info" onclick="document.getElementById('qty-${p.id}').value = 100">+100</button>
-                                </div>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" id="qty-${p.id}" value="1" class="form-control" min="1">
-                                    <button onclick="addToSupplyList(${p.id}, '${p.name}')" class="btn btn-info text-white fw-bold">➕ ДОБАВИ</button>
-                                </div>
+                <div class="col">
+                    <div class="card h-100 product-card shadow-sm">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold mb-1">${p.name}</h6>
+                            <div class="small text-muted mb-2">Наличност: <b class="text-dark">${p.stockQuantity}</b></div>
+                            <div class="mb-2 d-flex gap-1">
+                                <button class="btn btn-xs btn-outline-info" onclick="document.getElementById('qty-${p.id}').value = 10">+10</button>
+                                <button class="btn btn-xs btn-outline-info" onclick="document.getElementById('qty-${p.id}').value = 100">+100</button>
+                            </div>
+                            <div class="input-group input-group-sm">
+                                <input type="number" id="qty-${p.id}" value="1" class="form-control" min="1">
+                                <button onclick="addToSupplyList(${p.id}, '${p.name}')" class="btn btn-info text-white fw-bold">➕ ДОБАВИ</button>
                             </div>
                         </div>
-                    </div>`).join('');
+                    </div>
+                </div>`).join('');
         }
 
         function addToSupplyList(id, name) {
-            let qty = parseFloat(document.getElementById('qty-' + id).value);
-            if (isNaN(qty) || qty <= 0) return;
+            const input = document.getElementById('qty-' + id);
+            let qty = parseFloat(input.value);
+            if (isNaN(qty) || qty <= 0) { alert("Въведете валидно количество!"); return; }
 
             let existing = supplyList.find(x => x.productId === id);
             if (existing) existing.quantity += qty;
             else supplyList.push({ productId: id, name: name, quantity: qty });
 
+            input.value = 1;
             renderSupplyList();
         }
 
@@ -212,10 +221,10 @@
                 container.innerHTML = '<p class="text-center text-muted py-5 italic">НЯМА ИЗБРАНИ СТОКИ</p>';
             } else {
                 container.innerHTML = supplyList.map((item, idx) => `
-                        <div class="supply-item animate__animated animate__fadeIn">
+                        <div class="supply-item">
                             <div><b>${item.name}</b></div>
                             <div>
-                                <span class="qty-badge">+${item.quantity}</span>
+                                <span class="qty-badge">+${item.quantity.toFixed(2)}</span>
                                 <button class="btn btn-sm text-danger ms-2" onclick="supplyList.splice(${idx},1);renderSupplyList()">×</button>
                             </div>
                         </div>`).join('');
@@ -255,12 +264,14 @@
                     alert("✅ Складът е актуализиран успешно!");
                     window.location.href = "history.html"; 
                 } else {
-                    alert("❌ Грешка при запис в сървъра.");
+                    const errorMsg = await response.text();
+                    alert("❌ Грешка при запис: " + errorMsg);
                     btn.disabled = false;
                     btn.innerText = "ВКАРАЙ В СКЛАДА";
                 }
             } catch (err) {
-                alert("❌ Сървърна грешка. Проверете връзката.");
+                console.error(err);
+                alert("❌ Сървърна грешка. Проверете връзката с Render.");
                 btn.disabled = false;
                 btn.innerText = "ВКАРАЙ В СКЛАДА";
             }
