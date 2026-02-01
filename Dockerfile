@@ -1,7 +1,9 @@
-yFROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
 COPY *.sln .
+
+
 COPY EasyStore.API/*.csproj ./EasyStore.API/
 COPY EasyStore.Data/*.csproj ./EasyStore.Data/
 COPY EasyStore.Domain/*.csproj ./EasyStore.Domain/
