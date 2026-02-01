@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: template-api
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+
+databases:
+  - name: EasyStore-db
+    databaseName: EasyStoredb
+    plan: free

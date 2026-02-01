@@ -1,1 +1,1 @@
-# EasyStore
+# EasyStoreWebApi

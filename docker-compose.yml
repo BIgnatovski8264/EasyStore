@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16
+    container_name: EasyStore-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${DB_NAME}"
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    networks:
+      - EasyStore-network
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  EasyStore.api:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - "${PORT}:${PORT}"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
+      ASPNETCORE_URLS: "http://*:${PORT}"
+      DB_CONNECTION: "Host=db;Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}"
+    depends_on:
+      - db
+    networks:
+      - EasyStore-network
+
+networks:
+  EasyStore-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
