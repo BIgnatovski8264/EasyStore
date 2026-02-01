@@ -12,10 +12,10 @@
             transition: 0.3s;
         }
 
-            body.dark-mode {
-                background-color: #1a1a1a;
-                color: #e0e0e0;
-            }
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
 
         #login-overlay {
             position: fixed;
@@ -56,10 +56,10 @@
             border-left: 5px solid #6c757d;
         }
 
-            .product-card:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            }
+        .product-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
 
         .dark-mode .product-card {
             background: #333;
@@ -84,9 +84,7 @@
         }
 
         @keyframes blink {
-            50% {
-                opacity: 0.5;
-            }
+            50% { opacity: 0.5; }
         }
 
         .low-stock-alert {
@@ -270,26 +268,20 @@
             const id = document.getElementById('new-id').value.trim();
             const pass = document.getElementById('new-pass').value.trim();
             if (!id || !pass) return;
-
-            if (cashiers.find(c => c.id === id)) {
-                alert("Този номер вече съществува!");
-                return;
-            }
-
+            if (cashiers.find(c => c.id === id)) { alert("Този номер вече съществува!"); return; }
             cashiers.push({ id: id, pass: pass, name: "Касиер " + id, role: "user" });
             localStorage.setItem('pos_users', JSON.stringify(cashiers));
             renderStaffList();
-            alert("Добавен!");
         }
 
         function renderStaffList() {
             const list = document.getElementById('staff-list');
             list.innerHTML = cashiers.filter(c => c.role !== 'admin').map(c => `
-                    <div class="d-flex justify-content-between border-bottom py-1">
-                        <span>№${c.id} - ${c.name}</span>
-                        <button onclick="removeStaff('${c.id}')" class="btn btn-sm text-danger p-0">изтрий</button>
-                    </div>
-                `).join('');
+                <div class="d-flex justify-content-between border-bottom py-1">
+                    <span>№${c.id} - ${c.name}</span>
+                    <button onclick="removeStaff('${c.id}')" class="btn btn-sm text-danger p-0">изтрий</button>
+                </div>
+            `).join('');
         }
 
         function removeStaff(id) {
@@ -305,14 +297,17 @@
                 const res = await fetch(`${API_URL}/Categories`);
                 const categories = await res.json();
                 const container = document.getElementById('category-filters');
-                categories.forEach(cat => {
-                    const btn = document.createElement('button');
-                    btn.className = `btn btn-outline-secondary cat-btn`;
-                    btn.innerText = cat.name;
-                    btn.onclick = (e) => filterByCategory(cat.id, e.target);
-                    container.appendChild(btn);
-                });
-            } catch (err) { console.error(err); }
+                // Добавена проверка за масив, за да не гърми при грешка 500
+                if (Array.isArray(categories)) {
+                    categories.forEach(cat => {
+                        const btn = document.createElement('button');
+                        btn.className = `btn btn-outline-secondary cat-btn`;
+                        btn.innerText = cat.name;
+                        btn.onclick = (e) => filterByCategory(cat.id, e.target);
+                        container.appendChild(btn);
+                    });
+                }
+            } catch (err) { console.error("Грешка категории:", err); }
         }
 
         async function loadProducts() {
@@ -321,7 +316,10 @@
                 const data = await res.json();
                 allProducts = Array.isArray(data) ? data.sort((a, b) => a.name.localeCompare(b.name)) : [];
                 renderProductsGrid();
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+                console.error("Грешка продукти:", err);
+                document.getElementById('products-grid').innerHTML = '<div class="alert alert-danger">Грешка при зареждане на продуктите. Провери базата!</div>';
+            }
         }
 
         function filterByCategory(catId, btnElement) {
@@ -336,7 +334,7 @@
 
         function quickAdd(id, val) {
             const input = document.getElementById('qty-' + id);
-            input.value = parseFloat(input.value || 0) + val;
+            if(input) input.value = parseFloat(input.value || 0) + val;
         }
 
         function renderProductsGrid() {
@@ -348,32 +346,31 @@
             );
 
             grid.innerHTML = filtered.map(p => `
-                    <div class="col">
-                        <div class="card h-100 product-card shadow-sm">
-                            <div class="card-body p-3">
-                                <h6 class="fw-bold mb-1">${p.name}</h6>
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div>
-                                        <span class="badge bg-dark fs-6">${p.price.toFixed(2)} лв.</span>
-                                        <div class="euro-price">${(p.price / EUR_RATE).toFixed(2)} €</div>
-                                    </div>
-                                    <span class="small ${p.stockQuantity <= 3 ? 'low-stock-alert' : ''}">Налично: ${p.stockQuantity}</span>
+                <div class="col">
+                    <div class="card h-100 product-card shadow-sm">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold mb-1">${p.name}</h6>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span class="badge bg-dark fs-6">${p.price.toFixed(2)} лв.</span>
+                                    <div class="euro-price">${(p.price / EUR_RATE).toFixed(2)} €</div>
                                 </div>
-                                <div class="${isAdmin ? 'd-none' : ''}">
-                                    <div class="mb-2 d-flex gap-1">
-                                        <button class="btn btn-sm btn-outline-secondary" onclick="quickAdd(${p.id}, 1)">+1</button>
-                                        <button class="btn btn-sm btn-outline-secondary" onclick="quickAdd(${p.id}, 5)">+5</button>
-                                        <button class="btn btn-sm btn-outline-secondary" onclick="quickAdd(${p.id}, 10)">+10</button>
-                                    </div>
-                                    <div class="input-group input-group-sm">
-                                        <input type="number" id="qty-${p.id}" value="1" step="any" class="form-control">
-                                        <button onclick="addToReceipt(${p.id})" class="btn btn-dark" ${p.stockQuantity <= 0 ? 'disabled' : ''}>➕ ДОБАВИ</button>
-                                    </div>
+                                <span class="small ${p.stockQuantity <= 3 ? 'low-stock-alert' : ''}">Налично: ${p.stockQuantity}</span>
+                            </div>
+                            <div class="${isAdmin ? 'd-none' : ''}">
+                                <div class="mb-2 d-flex gap-1">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="quickAdd(${p.id}, 1)">+1</button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="quickAdd(${p.id}, 5)">+5</button>
+                                </div>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" id="qty-${p.id}" value="1" step="any" class="form-control">
+                                    <button onclick="addToReceipt(${p.id})" class="btn btn-dark" ${p.stockQuantity <= 0 ? 'disabled' : ''}>➕ ДОБАВИ</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                `).join('');
+                </div>
+            `).join('');
         }
 
         function addToReceipt(productId) {
@@ -401,15 +398,15 @@
                 container.innerHTML = '<p class="text-center text-muted py-5 italic">НЯМА ДОБАВЕНИ ПРОДУКТИ</p>';
             } else {
                 container.innerHTML = receipt.map((item, idx) => `
-                        <div class="receipt-item">
-                            <div><b>${item.name}</b><br>${item.quantity.toFixed(2)} x ${item.price.toFixed(2)}</div>
-                            <div class="text-end">
-                                <div>${(item.price * item.quantity).toFixed(2)} лв.</div>
-                                <div class="small text-muted">${((item.price * item.quantity) / EUR_RATE).toFixed(2)} €</div>
-                                <button class="btn btn-sm text-danger p-0" onclick="removeFromReceipt(${idx})">изтрий</button>
-                            </div>
+                    <div class="receipt-item">
+                        <div><b>${item.name}</b><br>${item.quantity.toFixed(2)} x ${item.price.toFixed(2)}</div>
+                        <div class="text-end">
+                            <div>${(item.price * item.quantity).toFixed(2)} лв.</div>
+                            <div class="small text-muted">${((item.price * item.quantity) / EUR_RATE).toFixed(2)} €</div>
+                            <button class="btn btn-sm text-danger p-0" onclick="removeFromReceipt(${idx})">изтрий</button>
                         </div>
-                    `).join('');
+                    </div>
+                `).join('');
             }
             let totalBgn = receipt.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             document.getElementById('receipt-total-bgn').innerText = totalBgn.toFixed(2);
@@ -442,6 +439,8 @@
                     receipt = [];
                     renderReceipt();
                     await loadProducts();
+                } else {
+                    alert("❌ Грешка при продажбата!");
                 }
             } catch (err) { console.error(err); }
             btn.disabled = false;
