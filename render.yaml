@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: template-api
+    name: EasyStore-api
     env: docker
     plan: free
     dockerfilePath: ./Dockerfile
