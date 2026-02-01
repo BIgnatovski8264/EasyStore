@@ -82,6 +82,8 @@
 
             try {
                 const response = await fetch(API_URL);
+                if (!response.ok) throw new Error("Грешка при връзката");
+                
                 const data = await response.json();
 
                 if (!data || data.length === 0) {
@@ -155,13 +157,13 @@
 
             } catch (error) {
                 console.error("Грешка при отчета:", error);
-                summaryRows.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Грешка при връзка със сървъра в Render!</td></tr>';
+                summaryRows.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Грешка при връзка със сървъра в Render! Провери дали API-то работи.</td></tr>';
                 historyList.innerHTML = '<p class="text-center text-danger">Неуспешно зареждане на данните.</p>';
             }
         }
 
         loadReport();
         setInterval(loadReport, 30000); 
-
+    </script>
 </body>
 </html>
