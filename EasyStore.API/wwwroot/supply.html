@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bg">
 <head>
     <meta charset="UTF-8">
@@ -117,19 +117,22 @@
     </div>
 
     <script>
+        const API_URL = "https://easystore-api-irzm.onrender.com/api";
+        
         let supplyList = [];
         let allProducts = [];
         let currentCategoryId = 'all';
 
         async function init() {
-            document.getElementById('current-date').innerText = new Date().toLocaleString('bg-BG');
+            const dateEl = document.getElementById('current-date');
+            if(dateEl) dateEl.innerText = new Date().toLocaleString('bg-BG');
             await loadCategories();
             await loadProducts();
         }
 
         async function loadCategories() {
             try {
-                const res = await fetch('/api/Categories');
+                const res = await fetch(`${API_URL}/Categories`);
                 const categories = await res.json();
                 const container = document.getElementById('category-filters');
                 categories.forEach(cat => {
@@ -144,8 +147,10 @@
 
         async function loadProducts() {
             try {
-                const res = await fetch('/api/Products');
-                allProducts = await res.json();
+                const res = await fetch(`${API_URL}/Products`);
+                const data = await res.json();
+                // Добавена проверка за масив, за да не гърми кода при празна база
+                allProducts = Array.isArray(data) ? data : [];
                 renderGrid();
             } catch (err) { console.error("Грешка продукти:", err); }
         }
@@ -165,6 +170,11 @@
                 p.name.toLowerCase().includes(term) &&
                 (currentCategoryId === 'all' || p.categoryId === currentCategoryId)
             );
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="text-center w-100 py-5">Няма намерени продукти.</div>';
+                return;
+            }
 
             grid.innerHTML = filtered.map(p => `
                     <div class="col">
@@ -229,7 +239,7 @@
             const activeUser = sessionStorage.getItem('active_cashier') || "Склад";
 
             try {
-                const response = await fetch('/api/Products/add-multiple-stock', {
+                const response = await fetch(`${API_URL}/Products/add-multiple-stock`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(supplyList.map(s => ({
@@ -252,6 +262,7 @@
             } catch (err) {
                 alert("❌ Сървърна грешка. Проверете връзката.");
                 btn.disabled = false;
+                btn.innerText = "ВКАРАЙ В СКЛАДА";
             }
         }
 
