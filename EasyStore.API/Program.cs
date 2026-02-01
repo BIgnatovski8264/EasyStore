@@ -88,9 +88,15 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 
+app.UseCors("AllowAll");
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseCors("AllowAll");
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
+else 
+{
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
