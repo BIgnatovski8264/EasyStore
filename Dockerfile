@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+yFROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
 COPY *.sln .
@@ -19,4 +19,4 @@ COPY --from=build /app/out .
 
 EXPOSE 10000
 
-ENTRYPOINT ["dotnet", "Template.API.dll"]
+ENTRYPOINT ["dotnet", "EasyStore.API.dll"]
