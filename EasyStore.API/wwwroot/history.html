@@ -2,168 +2,236 @@
 <html lang="bg">
 <head>
     <meta charset="UTF-8">
-    <title>Пълен Отчет</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>История - SUPERMARKET POS</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
         body {
             background-color: #f0f2f5;
-            padding: 20px;
+            color: #333;
+            font-family: 'Segoe UI', sans-serif;
         }
 
-        .main-container {
-            max-width: 1000px;
-            margin: auto;
+        .navbar {
+            background-color: #212529 !important;
+            padding: 0.8rem 1rem;
         }
 
-        .report-box {
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.7) !important;
+        }
+
+            .nav-link.active {
+                color: #ffc107 !important;
+                font-weight: bold;
+            }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            margin-top: 20px;
             background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-            border-top: 6px solid #212529;
         }
 
-        .table thead {
-            background-color: #212529;
-            color: #ffc107;
+        .card-header {
+            background: white;
+            border-bottom: 1px solid #eee;
+            padding: 1.2rem;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .receipt-item {
+        .receipt-note {
             background: #fff;
-            border-radius: 10px;
+            border-left: 8px solid #ffc107; 
+            margin-bottom: 15px;
             padding: 15px;
-            margin-bottom: 10px;
-            border-left: 5px solid #ffc107;
+            border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+            .receipt-note.delivery {
+                border-left-color: #0dcaf0; 
+            }
+
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+        }
+
+        .price-tag {
+            background: #212529;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .badge-delivery {
+            background-color: #0dcaf0;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 3px;
+        }
+
+        .total-summary-box {
+            background: #212529;
+            color: #ffc107;
+            padding: 15px;
+            border-radius: 0 0 12px 12px;
+            text-align: right;
         }
     </style>
 </head>
 <body>
-
-    <div class="main-container">
-        <div class="mb-3">
-            <a href="index.html" class="btn btn-sm btn-dark">⬅ Обратно към Каса</a>
-            <a href="supply.html" class="btn btn-sm btn-outline-info">🚚 Склад</a>
-        </div>
-
-        <div class="report-box">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3 class="fw-bold m-0">📊 ОБЩ ОТЧЕТ ПРОДАЖБИ</h3>
-                <span id="sync-status" class="badge bg-success">В реално време (Render)</span>
+    <nav class="navbar navbar-expand navbar-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">🛒 SUPERMARKET POS</a>
+            <div class="navbar-nav me-auto">
+                <a class="nav-link" href="index.html">📦 Каса</a>
+                <a class="nav-link" href="supply.html">🚚 Доставки</a>
+                <a class="nav-link active" href="history.html">📜 История</a>
             </div>
-
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>ПРОДУКТ</th>
-                        <th class="text-center">ПРОДАДЕНО КОЛИЧЕСТВО</th>
-                        <th class="text-end">ОБЩА СУМА</th>
-                    </tr>
-                </thead>
-                <tbody id="summary-rows">
-                    <tr><td colspan="3" class="text-center">Зареждане на данни...</td></tr>
-                </tbody>
-            </table>
+            <div class="d-flex align-items-center text-white">
+                <span id="user-display" class="me-3 fw-bold border-start ps-3">👤 Касиер: ...</span>
+            </div>
         </div>
+    </nav>
 
-        <h4 class="fw-bold mb-3">📜 ИСТОРИЯ НА ВСИЧКИ ПРОДАЖБИ</h4>
-        <div id="history-list">
-            <p class="text-center text-muted">Зареждане на архив...</p>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header"><span>📊 ОБЩ ОТЧЕТ</span><button onclick="fetchHistory()" class="btn btn-sm btn-outline-secondary">🔄</button></div>
+                    <div class="card-body p-0">
+                        <table class="table mb-0">
+                            <tbody id="summary-table"></tbody>
+                        </table>
+                        <div class="total-summary-box">
+                            <small class="d-block text-white">ОБЩА СУМА ПРОДАЖБИ:</small>
+                            <h3 class="mb-0 fw-bold" id="grand-total">0.00 лв.</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <h5 class="fw-bold mt-4 mb-3">📜 ХРОНОЛОГИЯ НА БЕЛЕЖКИТЕ</h5>
+                <div id="history-notes-container"></div>
+            </div>
         </div>
     </div>
 
     <script>
-        const API_URL = "https://easystore-api-irzm.onrender.com/api/Sales";
+        const fetchHistory = async () => {
+            const summaryEl = document.getElementById('summary-table');
+            const notesContainer = document.getElementById('history-notes-container');
+            const grandTotalEl = document.getElementById('grand-total');
+            const userDisplay = document.getElementById('user-display');
 
-        async function loadReport() {
-            const summaryRows = document.getElementById('summary-rows');
-            const historyList = document.getElementById('history-list');
+            const activeUser = sessionStorage.getItem('active_cashier') || "Неизвестен";
+            userDisplay.innerText = `👤 ${activeUser}`;
 
             try {
-                const response = await fetch(API_URL);
-                if (!response.ok) throw new Error("Грешка при връзката");
-                
+                const response = await fetch('/api/Sales');
                 const data = await response.json();
 
-                if (!data || data.length === 0) {
-                    summaryRows.innerHTML = '<tr><td colspan="3" class="text-center py-4">Няма направени продажби все още.</td></tr>';
-                    historyList.innerHTML = '<p class="text-center text-muted">Архивът е празен.</p>';
-                    return;
-                }
+                const salesOnly = data.filter(d => d.totalPrice > 0);
+                const summaryGrouped = {};
+                let totalSalesSum = 0;
 
-                let productStats = {}; 
-                let groupedSales = {}; 
-
-                data.forEach(sale => {
-                    const guid = sale.groupGuid || sale.GroupGuid;
-                    
-                    if (guid && guid.startsWith("IN-")) return;
-
-                    const pName = sale.productName || sale.ProductName || "Неизвестен продукт";
-                    const pQty = sale.quantity || sale.Quantity || 0;
-                    const pSum = sale.totalPrice || sale.TotalPrice || 0;
-
-                    if (!productStats[pName]) productStats[pName] = { qty: 0, sum: 0 };
-                    productStats[pName].qty += pQty;
-                    productStats[pName].sum += pSum;
-
-                    if (guid) {
-                        if (!groupedSales[guid]) groupedSales[guid] = [];
-                        groupedSales[guid].push(sale);
-                    }
+                salesOnly.forEach(s => {
+                    if (!summaryGrouped[s.productName]) summaryGrouped[s.productName] = { qty: 0, total: 0 };
+                    summaryGrouped[s.productName].qty += s.quantity;
+                    summaryGrouped[s.productName].total += s.totalPrice;
+                    totalSalesSum += s.totalPrice;
                 });
 
-                summaryRows.innerHTML = Object.keys(productStats).map(name => `
-                    <tr>
-                        <td class="fw-bold">${name}</td>
-                        <td class="text-center fw-bold text-primary">${productStats[name].qty.toFixed(2)} бр.</td>
-                        <td class="text-end fw-bold text-success">${productStats[name].sum.toFixed(2)} лв.</td>
-                    </tr>
-                `).join('');
+                grandTotalEl.innerText = totalSalesSum.toFixed(2) + " лв.";
 
-                const sortedGuids = Object.keys(groupedSales).sort().reverse();
-                
-                if (sortedGuids.length === 0) {
-                    historyList.innerHTML = '<p class="text-center text-muted">Няма продажби за показване.</p>';
-                } else {
-                    historyList.innerHTML = sortedGuids.map(guid => {
-                        const items = groupedSales[guid];
-                        const dateRaw = items[0].saleDate || items[0].SaleDate;
-                        const date = new Date(dateRaw).toLocaleString('bg-BG');
-                        let totalBill = 0;
+                summaryEl.innerHTML = Object.entries(summaryGrouped)
+                    .sort((a, b) => a[0].localeCompare(b[0], 'bg'))
+                    .map(([name, info]) => `
+                            <tr>
+                                <td class="ps-3 py-2 small fw-bold">${name}</td>
+                                <td class="small text-center">${info.qty.toFixed(2)}</td>
+                                <td class="text-end pe-3 fw-bold">${info.total.toFixed(2)} лв.</td>
+                            </tr>
+                        `).join('');
 
-                        const billItems = items.map(it => {
-                            const qty = it.quantity || it.Quantity || 0;
-                            const price = it.totalPrice || it.TotalPrice || 0;
-                            totalBill += price;
-                            return `<div class="d-flex justify-content-between small">
-                                        <span>${it.productName || it.ProductName} (x${qty.toFixed(2)})</span>
-                                        <span>${price.toFixed(2)} лв.</span>
-                                    </div>`;
-                        }).join('');
+                const transactionGroups = {};
+                data.forEach(item => {
+                    const guid = item.groupGuid || `SINGLE-${item.id}`;
+                    if (!transactionGroups[guid]) {
+                        transactionGroups[guid] = {
+                            items: [],
+                            date: item.saleDate,
+                            cashier: item.cashierName || "Система",
+                            isDelivery: item.totalPrice === 0,
+                            totalSum: 0
+                        };
+                    }
+                    transactionGroups[guid].items.push(item);
+                    transactionGroups[guid].totalSum += item.totalPrice;
+                });
 
-                        return `
-                            <div class="receipt-item shadow-sm">
-                                <div class="d-flex justify-content-between fw-bold mb-2 border-bottom pb-1" style="font-size: 0.85rem;">
-                                    <span>📅 ${date}</span>
-                                    <span class="text-primary">ОБЩО: ${totalBill.toFixed(2)} лв.</span>
+                const sortedGuids = Object.keys(transactionGroups).sort((a, b) => {
+                    return new Date(transactionGroups[b].date) - new Date(transactionGroups[a].date);
+                });
+
+                notesContainer.innerHTML = sortedGuids.map(guid => {
+                    const group = transactionGroups[guid];
+                    const dateStr = new Date(group.date).toLocaleString('bg-BG');
+
+                    return `
+                            <div class="receipt-note ${group.isDelivery ? 'delivery' : ''}">
+                                <div class="note-header">
+                                    <span>📅 ${dateStr}</span>
+                                    <span>👤 ${group.cashier}</span>
                                 </div>
-                                ${billItems}
-                                <div class="text-muted mt-1" style="font-size: 0.65rem;">ID: ${guid}</div>
-                            </div>`;
-                    }).join('');
-                }
+                                <div class="note-body">
+                                    ${group.items.map(i => `
+                                        <div class="item-row">
+                                            <span>${i.productName} (x${i.quantity.toFixed(2)})</span>
+                                            <span>${i.totalPrice > 0 ? i.totalPrice.toFixed(2) + ' лв.' : ''}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="text-end mt-2 pt-2 border-top">
+                                    ${group.isDelivery
+                            ? `<span class="badge-delivery">🚚 ДОСТАВКА</span>`
+                            : `<span class="price-tag" style="background:#ffc107; color:#000;">ОБЩО: ${group.totalSum.toFixed(2)} лв.</span>`}
+                                </div>
+                            </div>
+                        `;
+                }).join('');
 
-            } catch (error) {
-                console.error("Грешка при отчета:", error);
-                summaryRows.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Грешка при връзка със сървъра в Render! Провери дали API-то работи.</td></tr>';
-                historyList.innerHTML = '<p class="text-center text-danger">Неуспешно зареждане на данните.</p>';
-            }
-        }
+            } catch (err) { console.error(err); }
+        };
 
-        loadReport();
-        setInterval(loadReport, 30000); 
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchHistory();
+            setInterval(fetchHistory, 5000);
+        });
     </script>
 </body>
 </html>
